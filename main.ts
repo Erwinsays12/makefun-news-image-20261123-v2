@@ -9,11 +9,20 @@
 // Run locally with:
 //   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
 
-import { copyFileSync, mkdirSync } from 'node:fs';
+import { copyFileSync, mkdirSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
+const src = join(here, 'entry.png');
+const dst = join(outDir, 'entry.png');
+// Fail loudly instead of copying a half-written file: the source must exist
+// and the copy must land with the same size.
+const { size } = statSync(src);
 mkdirSync(outDir, { recursive: true });
-copyFileSync(join(here, 'entry.png'), join(outDir, 'entry.png'));
+copyFileSync(src, dst);
+if (statSync(dst).size !== size) {
+  throw new Error(`entry.png copy incomplete: ${statSync(dst).size} of ${size} bytes`);
+}
+console.log(`copied entry.png (${size} bytes) to ${dst}`);
